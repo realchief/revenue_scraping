@@ -38,8 +38,9 @@ class NewEvents (scrapy.Spider):
                           formdata=self.FORM_DATA)
 
     def after_login(self, response):
-        client_id = None
-        yield Request(url=self.LOGIN_URL,
+        client_id = response.url.split('/')[-1]
+        API_URL = 'https://hotels.cloudbeds.com/connect_data/' + client_id
+        yield Request(url=API_URL,
                       callback=self.parse_product,
                       dont_filter=True
                       )
