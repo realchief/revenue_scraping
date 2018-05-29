@@ -84,6 +84,8 @@ class NewEvents (scrapy.Spider):
                     end_date = date(end_year, end_month, end_day)
                     price_values = [value for key, value in room_info.items()
                                     if 'day_' in key.lower() and '_guests' not in key.lower()]
+                    guest_values = [value for key, value in room_info.items()
+                                    if 'day_' in key.lower() and '_guests' in key.lower()]
 
                     date_range = self.daterange(start_date, end_date)
                     date_list = []
@@ -91,8 +93,13 @@ class NewEvents (scrapy.Spider):
                         date_list.append(single_date)
                     for s_date in date_list:
                         index_single_date = date_list.index(s_date)
-                        price_index = index_single_date % 7
-                        each_price = price_values[price_index]
+                        day_index = index_single_date % 7
+                        each_price = price_values[day_index]
+                        each_guest = guest_values[day_index]
+                        if not each_guest:
+                            each_available = 1
+                        else:
+                            each_available = 0
 
         prod_item = SiteProductItem()
         prod_item['container_num'] = self._parse_ContainerNumber(response)
