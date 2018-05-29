@@ -3,7 +3,7 @@ from urllib import urlencode
 from scrapy import Request, FormRequest
 import scrapy
 import json
-from datetime import timedelta, date
+from datetime import timedelta, date, datetime
 
 
 class SiteProductItem(scrapy.Item):
@@ -70,13 +70,29 @@ class NewEvents (scrapy.Spider):
                 room_name = ro_info['name']
                 for room_info in room_type['intervals']:
                     start_date = room_info['start_date']
+                    start_date = start_date.split('-')
+                    start_year = int(start_date[0])
+                    start_month = int(start_date[1])
+                    start_day = int(start_date[2])
+                    start_date = date(start_year, start_month, start_day)
+
                     end_date = room_info['end_date']
+                    end_date = end_date.split('-')
+                    end_year = int(end_date[0])
+                    end_month = int(end_date[1])
+                    end_day = int(end_date[2])
+                    end_date = date(end_year, end_month, end_day)
                     price_values = [value for key, value in room_info.items()
                                     if 'day_' in key.lower() and '_guests' not in key.lower()]
+
                     date_range = self.daterange(start_date, end_date)
+                    date_list = []
                     for single_date in date_range:
-                        index_single_date = single_date.indexOf(date_range)
-                        each_price = price_values[index_single_date]
+                        date_list.append(single_date)
+                    for s_date in date_list:
+                        index_single_date = date_list.index(s_date)
+                        price_index = index_single_date % 7
+                        each_price = price_values[price_index]
 
         prod_item = SiteProductItem()
         prod_item['container_num'] = self._parse_ContainerNumber(response)
@@ -101,7 +117,7 @@ class NewEvents (scrapy.Spider):
         except Exception as e:
             print('No Data')
 
-    def daterange(start_date, end_date):
+    def daterange(self, start_date, end_date):
         for n in range(int((end_date - start_date).days)):
             yield start_date + timedelta(n)
 
