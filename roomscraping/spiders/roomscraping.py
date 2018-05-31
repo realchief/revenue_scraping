@@ -3,6 +3,7 @@ from urllib import urlencode
 from scrapy import Request, FormRequest
 import scrapy
 import json
+import csv
 from datetime import timedelta, date, datetime
 
 
@@ -61,6 +62,8 @@ class NewEvents (scrapy.Spider):
         num_rooms = data['num_rooms']
         room_names = data['room_names']
         room_type_rates = data['room_type_rates']
+        total_source_list = []
+        total_source_data = {}
 
         for room_type in room_type_rates:
             room_type_id = room_type['room_type_id']
@@ -84,8 +87,6 @@ class NewEvents (scrapy.Spider):
                     end_date = date(end_year, end_month, end_day)
                     price_values = [value for key, value in room_info.items()
                                     if 'day_' in key.lower() and '_guests' not in key.lower()]
-                    guest_values = [value for key, value in room_info.items()
-                                    if 'day_' in key.lower() and '_guests' in key.lower()]
 
                     date_range = self.daterange(start_date, end_date)
                     date_list = []
@@ -95,34 +96,15 @@ class NewEvents (scrapy.Spider):
                         index_single_date = date_list.index(s_date)
                         day_index = index_single_date % 7
                         each_price = price_values[day_index]
-                        each_guest = guest_values[day_index]
-                        if not each_guest:
-                            each_available = 1
-                        else:
-                            each_available = 0
+                        total_source_data.update({s_date: each_price})
+            total_source_list.append(total_source_data)
 
-        prod_item = SiteProductItem()
-        prod_item['container_num'] = self._parse_ContainerNumber(response)
-
-        if any(value for value in prod_item.values()):
-            return prod_item
-
-
-    @staticmethod
-    def _parse_ContainerNumber(response):
-        try:
-            ContainerNumber = response.xpath('//table[@width="95%"][3]/tr[3]/td[1]//text()').extract()
-            if ContainerNumber:
-                ContainerNumber = str(ContainerNumber[0])
-            if not ContainerNumber and response.xpath('//td[@class="bor_L_none"]/a/font/u//text()'):
-                ContainerNumber = str(response.xpath('//td[@class="bor_L_none"]/a/font/u//text()')[0].extract())
-            if not ContainerNumber and response.xpath('//span[@class="tracking_container_id"]//text()'):
-                ContainerNumber = str(response.xpath('//span[@class="tracking_container_id"]//text()')[0].extract())
-            if not ContainerNumber and response.xpath('//tr[@class="field_odd"]//text()').extract():
-                ContainerNumber = str(response.xpath('//tr[@class="field_odd"]//text()').extract()[3])
-            return ContainerNumber if ContainerNumber else None
-        except Exception as e:
-            print('No Data')
+        with open('output.csv', 'wb') as out_csv:
+            writer = csv.writer(out_csv)
+            writer.writerow(["Client ID", "", "", "Inventory"])
+            writer.writerow(["", "", "", "", "DQ", "DK"])
+            writer.writerow(["year", "month", "day", "ALL",
+                             room_type_rates[0]['room_type_id'], room_type_rates[1]['room_type_id']])
 
     def daterange(self, start_date, end_date):
         for n in range(int((end_date - start_date).days)):
