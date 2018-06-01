@@ -4,15 +4,7 @@ from scrapy import Request, FormRequest
 import scrapy
 import json
 import csv
-from datetime import timedelta, date, datetime
-
-
-class SiteProductItem(scrapy.Item):
-    Classic_Twin_Room = scrapy.Field()
-    Single_Room = scrapy.Field()
-    Superior_Double_Room = scrapy.Field()
-    Classic_Double_Room = scrapy.Field()
-    Family_Room = scrapy.Field()
+from datetime import timedelta, date
 
 
 class NewEvents (scrapy.Spider):
@@ -101,10 +93,20 @@ class NewEvents (scrapy.Spider):
 
         with open('output.csv', 'wb') as out_csv:
             writer = csv.writer(out_csv)
-            writer.writerow(["Client ID", "", "", "Inventory"])
-            writer.writerow(["", "", "", "", "DQ", "DK"])
+            writer.writerow(["Client ID", data['property_id'], "", "Inventory", "",
+                             "", "", room_type_rates[0]['room_type_id'],
+                             room_type_rates[1]['room_type_id']])
+            writer.writerow(["", "", "", "", "DQ", "DK", "", "RateA", "RateA"])
             writer.writerow(["year", "month", "day", "ALL",
                              room_type_rates[0]['room_type_id'], room_type_rates[1]['room_type_id']])
+            for each_date in self.daterange(date(2018, 1, 1), date(2019, 1, 31)):
+                if each_date in total_source_list[0]:
+                    writer.writerow([each_date.year, each_date.month, each_date.day,
+                                     "20", "10", "10", "", total_source_list[0][each_date],
+                                     total_source_list[1][each_date]])
+                else:
+                    writer.writerow([each_date.year, each_date.month, each_date.day,
+                                     "0", "0", "0", "", "0", "0"])
 
     def daterange(self, start_date, end_date):
         for n in range(int((end_date - start_date).days)):
